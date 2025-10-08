@@ -81,9 +81,9 @@
         }
 
         (async function(){
-            const parkingData = await fetch("/bike-data-osm.geojson").then(r => r.json());
-            const groupData = await fetch("/monash-clayton-groups.json").then(r => r.json());
-            const aggregateData = await d3.csv("/bike-data-per-group.csv");
+            const parkingData = await fetch("bike-data-osm.geojson").then(r => r.json());
+            const groupData = await fetch("monash-clayton-groups.json").then(r => r.json());
+            const aggregateData = await d3.csv("bike-data-per-group.csv");
             
             const map = L.map("map-internal").setView([-37.909, 145.136], 15);
 
