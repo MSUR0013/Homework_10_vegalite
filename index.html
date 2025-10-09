@@ -6,8 +6,8 @@
   <title>Clayton Campus Bike Availability</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/purecss@3.0.0/build/pure-min.css"
-        integrity="sha384-X38yfunGUhNzHpBaEBsWLO+A0HDYOQi8ufWDkZ0k9e0eXz/tH3II7uKZ9msv++Ls"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+        integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
         crossorigin="anonymous">
   <link rel="stylesheet"
         href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -26,39 +26,66 @@
   <script src="https://unpkg.com/d3@7/dist/d3.min.js"></script>
 
   <style>
-    body { padding: 1rem; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-    #map-internal { min-height: 30rem; margin-bottom: 2rem; }
-    #lights-chart { max-width: 720px; margin: 1rem 0; }
+    #map-internal { min-height: 20rem; }
   </style>
 </head>
-<body>
-  <h1>Clayton Campus Bike Availability</h1>
+<body class="p-4">
+  <div class="row">
+    <div class="col-12 my-3">
+      <h1>Clayton Campus Bike Parking Availability</h1>
+    </div>
+    <div class="col-12 col-md-8 my-3">
+      <div id="map-internal"></div>
+    </div>
+    <form id="filter" class="col-12 col-md-4 my-3">
+      <div class="card">
+        <div class="card-header"><h5 class="m-0">Filter</h5></div>
+        <div class="card-body">
+          <div class="mb-3 form-check form-switch">
+            <label for="filter-is-lit" class="form-check-label">Lit during night</label>
+            <input id="filter-is-lit" class="form-check-input" type="checkbox" role="switch" switch>
+          </div>
+          <div class="mb-3">
+            <label for="filter-parking-type" class="form-label">Parking type</label>
+            <select id="filter-parking-type" class="form-select">
+              <option value="all">All</option>
+              <option value="stands">Bike Stands/Racks</option>
+              <option value="shed">Bike Shed</option>
+              <option value="building">Indoor Bike Stations</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="filter-parking-access" class="form-label">Parking access</label>
+            <select id="filter-parking-access" class="form-select">
+              <option value="all">All</option>
+              <option value="nil">Open</option>
+              <option value="permit">By Permit</option>
+              <option value="residents">Residents</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </form>
 
-  <form id="filter" class="pure-form pure-form-stacked">
-    <label for="filter-is-lit">Lit during night</label>
-    <input id="filter-is-lit" type="checkbox">
+    <!-- Bar chart container -->
+    <div class="col-12 col-sm-6 col-md-4 my-3">
+      <div id="lights-chart" class="ratio ratio-1x1"></div>
+    </div>
 
-    <label for="filter-parking-type">Parking type</label>
-    <select id="filter-parking-type">
-      <option value="all">All</option>
-      <option value="stands">Bike Stands/Racks</option>
-      <option value="shed">Bike Shed</option>
-      <option value="building">Indoor Bike Stations</option>
-    </select>
+    <!-- Other chart container (visualisation not ready) -->
+    <div class="col-12 col-sm-6 col-md-4 my-3">
+      <div class="ratio ratio-1x1 bg-primary-subtle">
+        Chart 3
+      </div>
+    </div>
 
-    <label for="filter-parking-access">Parking access</label>
-    <select id="filter-parking-access">
-      <option value="all">All</option>
-      <option value="nil">Open</option>
-      <option value="permit">Permit</option>
-      <option value="residents">Residents</option>
-    </select>
-  </form>
-
-  <div id="map-internal"></div>
-
-  <!-- Bar chart container -->
-  <div id="lights-chart"></div>
+    <!-- Other chart container (visualisation not ready) -->
+    <div class="col-12 col-sm-6 col-md-4 my-3">
+      <div class="ratio ratio-1x1 bg-success-subtle">
+        Chart 4
+      </div>
+    </div>
+  </div>
 
   <script>
     // Map coloring helper

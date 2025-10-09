@@ -1,8 +1,8 @@
 {
     "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
     "description": "Bike parking places by lighting",
-    "width": 640,
-    "height": 300,
+    "width": "container",
+    "height": "container",
     "data": {
       "url": "bike-data-original.csv"
     },
