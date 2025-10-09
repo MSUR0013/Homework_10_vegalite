@@ -1,155 +1,164 @@
-    <!DOCTYPE html>
-    <html>
-    <head>
-    <meta charset="utf-8">
-    <title>Clayton Campus Bike Availability</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet"
-            href="https://cdn.jsdelivr.net/npm/purecss@3.0.0/build/pure-min.css"
-            integrity="sha384-X38yfunGUhNzHpBaEBsWLO+A0HDYOQi8ufWDkZ0k9e0eXz/tH3II7uKZ9msv++Ls"
-            crossorigin="anonymous">
-    <link rel="stylesheet"
-            href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-            integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-            crossorigin="">
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-            crossorigin=""></script>
-    <script src="https://unpkg.com/d3@7/dist/d3.min.js"></script>
-    <style>
-        body {
-        padding: 1rem;
-        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-        }
-        #map-internal {
-        min-height: 30rem;
-        margin-bottom: 2rem;
-        }
-        #lights-bar {
-        max-width: 640px;
-        margin: 2rem auto;
-        }
-    </style>
-    </head>
-    <body>
-    <h1>Clayton Campus Bike Availability</h1>
 
-    <form id="filter" class="pure-form pure-form-stacked">
-        <label for="filter-is-lit">Lit during night</label>
-        <input id="filter-is-lit" type="checkbox">
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Clayton Campus Bike Availability</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/purecss@3.0.0/build/pure-min.css"
+        integrity="sha384-X38yfunGUhNzHpBaEBsWLO+A0HDYOQi8ufWDkZ0k9e0eXz/tH3II7uKZ9msv++Ls"
+        crossorigin="anonymous">
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin="">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+          crossorigin=""></script>
 
-        <label for="filter-parking-type">Parking type</label>
-        <select id="filter-parking-type">
-        <option value="all">All</option>
-        <option value="stands">Bike Stands/Racks</option>
-        <option value="shed">Bike Shed</option>
-        <option value="building">Indoor Bike Stations</option>
-        </select>
+  <!-- Vega libraries to render the JSON bar chart -->
+  <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
 
-        <label for="filter-parking-access">Parking access</label>
-        <select id="filter-parking-access">
-        <option value="all">All</option>
-        <option value="nil">Open</option>
-        <option value="permit">Permit</option>
-        <option value="residents">Residents</option>
-        </select>
-    </form>
+  <!-- d3 for CSV used by the map -->
+  <script src="https://unpkg.com/d3@7/dist/d3.min.js"></script>
 
-    <div id="map-internal"></div>
-    <div id="lights-bar"></div>
+  <style>
+    body { padding: 1rem; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    #map-internal { min-height: 30rem; margin-bottom: 2rem; }
+    #lights-chart { max-width: 720px; margin: 1rem 0; }
+  </style>
+</head>
+<body>
+  <h1>Clayton Campus Bike Availability</h1>
 
-    <script>
-        // Leaflet map
-        (async function () {
-        const groupData = await fetch("monash-clayton-groups.json").then(r => r.json());
-        const aggregateData = await d3.csv("bike-data-per-group.csv");
+  <form id="filter" class="pure-form pure-form-stacked">
+    <label for="filter-is-lit">Lit during night</label>
+    <input id="filter-is-lit" type="checkbox">
 
-        const map = L.map("map-internal").setView([-37.909, 145.136], 15);
+    <label for="filter-parking-type">Parking type</label>
+    <select id="filter-parking-type">
+      <option value="all">All</option>
+      <option value="stands">Bike Stands/Racks</option>
+      <option value="shed">Bike Shed</option>
+      <option value="building">Indoor Bike Stations</option>
+    </select>
 
-        L.geoJson(groupData, {
-            style: {
-            fillColor: "#74a9cf",
-            weight: 2,
-            opacity: 1,
-            color: "#034e7b",
-            fillOpacity: 0.6
-            }
-        }).addTo(map);
+    <label for="filter-parking-access">Parking access</label>
+    <select id="filter-parking-access">
+      <option value="all">All</option>
+      <option value="nil">Open</option>
+      <option value="permit">Permit</option>
+      <option value="residents">Residents</option>
+    </select>
+  </form>
 
-        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            maxZoom: 19,
-            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        }).addTo(map);
-        })();
+  <div id="map-internal"></div>
 
-        // D3 bar chart
-        (async function () {
-        const rows = await d3.csv("bike-data-original.csv");
+  <!-- Bar chart container -->
+  <div id="lights-chart"></div>
 
-        let lit = 0, notLit = 0;
-        rows.forEach(r => {
-            const v = (r.lit || "").toString().trim().toLowerCase();
-            if (v === "yes") lit++;
-            else notLit++;
-        });
+  <script>
+    // Map coloring helper
+    function getColorShade(scale) {
+      if (scale >= 0.125) return "#034e7b";
+      else if (scale >= 0.100) return "#0570b0";
+      else if (scale >= 0.075) return "#3690c0";
+      else if (scale >= 0.050) return "#74a9cf";
+      else if (scale >= 0.025) return "#a6bddb";
+      else if (scale > 0) return "#d0d1e6";
+      else return "#f1eef6";
+    }
 
-        const data = [
-            { label: "With Light", value: lit },
-            { label: "No light", value: notLit }
-        ];
+    function styleGroup(groupData, aggregateData) {
+      const form = document.getElementById("filter").elements;
+      const isLit = form.namedItem("filter-is-lit").checked;
+      const parkingType = form.namedItem("filter-parking-type").value;
+      const parkingAccess = form.namedItem("filter-parking-access").value;
 
-        const margin = { top: 24, right: 16, bottom: 36, left: 48 };
-        const width = 640, height = 300;
+      let grandTotalCapacity = 0;
+      let totalCapacity = 0;
 
-        const x = d3.scaleBand()
-            .domain(data.map(d => d.label))
-            .range([margin.left, width - margin.right])
-            .padding(0.3);
+      aggregateData.forEach(function (row) {
+        if (isLit && row.lit !== "yes") return;
+        if (parkingType !== "all" && row.bicycle_parking !== parkingType) return;
+        if (parkingAccess !== "all" && row.access !== parkingAccess) return;
 
-        const y = d3.scaleLinear()
-            .domain([0, d3.max(data, d => d.value)]).nice()
-            .range([height - margin.bottom, margin.top]);
+        grandTotalCapacity += Number(row.total_capacity);
+        if (row.group !== groupData.properties.group) return;
+        totalCapacity += Number(row.total_capacity);
+      });
 
-        const svg = d3.select("#lights-bar")
-            .append("svg")
-            .attr("width", width)
-            .attr("height", height);
+      const shade = getColorShade(grandTotalCapacity ? totalCapacity / grandTotalCapacity : 0);
+      return {
+        fillColor: shade,
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.7,
+        color: "#034e7b",
+        dashArray: "3"
+      };
+    }
 
-        svg.append("g")
-            .attr("transform", `translate(0,${height - margin.bottom})`)
-            .call(d3.axisBottom(x));
+    // Initialize Leaflet map and groups
+    (async function () {
+      const groupData = await fetch("monash-clayton-groups.json").then(r => r.json());
+      const aggregateData = await d3.csv("bike-data-per-group.csv");
 
-        svg.append("g")
-            .attr("transform", `translate(${margin.left},0)`)
-            .call(d3.axisLeft(y).ticks(6));
+      const map = L.map("map-internal").setView([-37.909, 145.136], 15);
 
-        svg.selectAll("rect")
-            .data(data)
-            .enter()
-            .append("rect")
-            .attr("x", d => x(d.label))
-            .attr("y", d => y(d.value))
-            .attr("width", x.bandwidth())
-            .attr("height", d => y(0) - y(d.value))
-            .attr("fill", "#3690c0");
+      const groupLayer = L.geoJson(groupData, {
+        onEachFeature: function (feature, layer) {
+          const form = document.getElementById("filter").elements;
+          layer.addEventListener("click", function () {
+            const isLit = form.namedItem("filter-is-lit").checked;
+            const parkingType = form.namedItem("filter-parking-type").value;
+            const parkingAccess = form.namedItem("filter-parking-access").value;
 
-        svg.selectAll("text.val")
-            .data(data)
-            .enter()
-            .append("text")
-            .attr("x", d => x(d.label) + x.bandwidth() / 2)
-            .attr("y", d => y(d.value) - 6)
-            .attr("text-anchor", "middle")
-            .style("font", "12px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif")
-            .text(d => d.value);
+            let totalCapacity = 0;
+            let totalLocations = 0;
+            let grandTotalCapacity = 0;
+            let grandTotalLocations = 0;
 
-        svg.append("text")
-            .attr("x", margin.left)
-            .attr("y", 18)
-            .style("font", "14px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif")
-            .style("font-weight", "600")
-            .text("Bike parking places by lighting");
-        })();
-    </script>
-    </body>
-    </html>
+            aggregateData.forEach(function (row) {
+              if (isLit && row.lit !== "yes") return;
+              if (parkingType !== "all" && row.bicycle_parking !== parkingType) return;
+              if (parkingAccess !== "all" && row.access !== parkingAccess) return;
+
+              grandTotalCapacity += Number(row.total_capacity);
+              grandTotalLocations += Number(row.total_locations);
+
+              if (row.group !== feature.properties.group) return;
+              totalCapacity += Number(row.total_capacity);
+              totalLocations += Number(row.total_locations);
+            });
+
+            layer.bindPopup(
+              `<h4>${feature.properties.name}</h4>
+              <p>Total parking spots: ${totalLocations} (out of ${grandTotalLocations})</p>
+              <p>Total capacity: ${totalCapacity} bikes (out of ${grandTotalCapacity})</p>`
+            ).openPopup();
+          });
+        },
+        style: f => styleGroup(f, aggregateData)
+      }).addTo(map);
+
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      }).addTo(map);
+
+      document.getElementById("filter").addEventListener("change", () => {
+        groupLayer.resetStyle();
+      });
+    })();
+
+    // Embed Vega-Lite chart from external JSON
+    (async function () {
+      await vegaEmbed("#lights-chart", "bar_chart.json", { actions: false });
+    })();
+  </script>
+</body>
+</html>
