@@ -25,34 +25,13 @@
     <script src="https://unpkg.com/d3@7/dist/d3.min.js"></script>
 
     <style>
-      body {
-        padding: 1rem;
-        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-        background-color: #fafafa;
-      }
-      #map-internal {
-        height: 480px;
-        margin-bottom: 24px;
-        background: #f8f9fb;
-        border-radius: 8px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      }
-      .charts {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 24px;
-      }
-      @media (min-width: 1100px) {
-        .charts { grid-template-columns: 1fr 1fr; }
-      }
-      .chart {
-        min-height: 360px;
-        background: #fff;
-        border-radius: 8px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-        padding: 8px;
-      }
-      #capacity-matrix, #parking-distribution { grid-column: 1 / -1; }
+      body { padding: 1rem; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background-color: #fafafa; }
+      #map-internal { height: 480px; margin-bottom: 24px; background: #f8f9fb; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,.1); }
+      .charts { display: grid; grid-template-columns: 1fr; gap: 24px; }
+      @media (min-width: 1100px) { .charts { grid-template-columns: 1fr 1fr; } }
+      .chart { min-height: 360px; background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,.1); padding: 8px; }
+      /* make the bigger ones span full width */
+      #capacity-matrix, #parking-distribution, #capacity-bubble { grid-column: 1 / -1; }
     </style>
   </head>
   <body>
@@ -87,6 +66,7 @@
       <div id="access-donut" class="chart"></div>
       <div id="capacity-matrix" class="chart"></div>
       <div id="parking-distribution" class="chart"></div>
+      <div id="capacity-bubble" class="chart"></div>
     </div>
 
     <script>
@@ -107,8 +87,7 @@
         const parkingType = form.namedItem("filter-parking-type").value;
         const parkingAccess = form.namedItem("filter-parking-access").value;
 
-        let grandTotalCapacity = 0;
-        let totalCapacity = 0;
+        let grandTotalCapacity = 0, totalCapacity = 0;
 
         aggregateData.forEach(function (row) {
           if (isLit && row.lit !== "yes") return;
@@ -155,7 +134,6 @@
 
                   grandTotalCapacity += Number(row.total_capacity);
                   grandTotalLocations += Number(row.total_locations);
-
                   if (row.group !== feature.properties.group) return;
                   totalCapacity += Number(row.total_capacity);
                   totalLocations += Number(row.total_locations);
@@ -177,64 +155,10 @@
         }
       })();
 
-      /* ====== CHART SPECS (bar + donut external; matrix + scatter inline) ====== */
-      const barSpec = {
-        "$schema":"https://vega.github.io/schema/vega-lite/v5.json",
-        "description":"Bike parking places by lighting",
-        "width":"container","height":320,
-        "data":{"url":"bike-data-original.csv"},
-        "transform":[
-          {"calculate":"lower(datum.lit) === 'yes' ? 'Lit' : 'No light'","as":"Lighting"}
-        ],
-        "layer":[
-          {
-            "mark":{"type":"bar"},
-            "encoding":{
-              "x":{"field":"Lighting","type":"nominal","sort":["Lit","No light"],"title":"Lighting"},
-              "y":{"aggregate":"count","type":"quantitative","title":"Count of places"},
-              "color":{"field":"Lighting","type":"nominal","legend":null,
-                "scale":{"domain":["Lit","No light"],"range":["#3690c0","#a6bddb"]}}
-            }
-          },
-          {
-            "mark":{"type":"text","dy":-6},
-            "encoding":{
-              "x":{"field":"Lighting","type":"nominal","sort":["Lit","No light"]},
-              "y":{"aggregate":"count","type":"quantitative"},
-              "text":{"aggregate":"count","type":"quantitative"}
-            }
-          }
-        ],
-        "title":{"text":"Bike parking places by lighting","fontWeight":"bold"}
-      };
-
-      const donutSpec = {
-        "$schema":"https://vega.github.io/schema/vega-lite/v5.json",
-        "description":"Donut chart: total bike parking capacity by access type",
-        "width":"container","height":320,
-        "data":{"url":"bike-data-original.csv","format":{"type":"csv"}},
-        "transform":[
-          {"calculate":"lower(datum.access || '')","as":"access_lower"},
-          {"calculate":"datum.access_lower === 'nil' ? 'Open' : datum.access_lower === 'permit' ? 'Permit' : datum.access_lower === 'residents' ? 'Residents' : (datum.access || 'Other')","as":"Access"},
-          {"calculate":"toNumber(datum.capacity || datum.total_capacity || 0)","as":"cap_num"}
-        ],
-        "mark":{"type":"arc","innerRadius":110,"outerRadius":150,"stroke":"#fff"},
-        "encoding":{
-          "theta":{"aggregate":"sum","field":"cap_num","type":"quantitative","title":"Total capacity"},
-          "color":{"field":"Access","type":"nominal","title":"Access type",
-            "scale":{"domain":["Open","Permit","Residents","Other"],"range":["#74a9cf","#3690c0","#0570b0","#a6bddb"]}},
-          "order":{"aggregate":"sum","field":"cap_num","sort":"descending"},
-          "tooltip":[
-            {"field":"Access","type":"nominal","title":"Access"},
-            {"aggregate":"sum","field":"cap_num","type":"quantitative","title":"Total capacity"}
-          ]
-        },
-        "title":{"text":"Parking capacity by access type","fontWeight":"bold"}
-      };
-
+      /* ====== INLINE SPECS FOR MATRIX + BUBBLE (the flaky ones) ====== */
       const matrixSpec = {
         "$schema":"https://vega.github.io/schema/vega-lite/v5.json",
-        "description":"3x3 matrix with missing combos shown as 0",
+        "description":"3x3 matrix with imputed zeros",
         "width":"container","height":420,
         "data":{"url":"bike-data-original.csv","format":{"type":"csv"}},
         "transform":[
@@ -267,6 +191,76 @@
         "title":{"text":"Capacity by Parking Type × Access","fontWeight":"bold"}
       };
 
+      const bubbleSpec = {
+        "$schema":"https://vega.github.io/schema/vega-lite/v5.json",
+        "description":"Bubble chart: total capacity by Parking Type × Access",
+        "width":"container","height":360,
+        "data":{"url":"bike-data-original.csv","format":{"type":"csv"}},
+        "transform":[
+          {"calculate":"toNumber(datum.capacity || datum.total_capacity || 0)","as":"cap_num"},
+          {"calculate":"lower(datum.bicycle_parking || '')","as":"type_lower"},
+          {"calculate":"datum.type_lower === 'stands' ? 'Stands' : datum.type_lower === 'shed' ? 'Shed' : datum.type_lower === 'building' ? 'Building' : 'Other'","as":"ParkingType"},
+          {"calculate":"lower(datum.access || '')","as":"access_lower"},
+          {"calculate":"datum.access_lower === 'nil' ? 'Open' : datum.access_lower === 'permit' ? 'Permit' : datum.access_lower === 'residents' ? 'Residents' : 'Other'","as":"Access"},
+          {"aggregate":[{"op":"sum","field":"cap_num","as":"cap_sum"}],"groupby":["ParkingType","Access"]},
+          {"impute":"cap_sum","key":"Access","groupby":["ParkingType"],"method":"value","value":0},
+          {"impute":"cap_sum","key":"ParkingType","groupby":["Access"],"method":"value","value":0},
+          {"filter":"indexof(['Stands','Shed','Building'], datum.ParkingType) >= 0"},
+          {"filter":"indexof(['Open','Permit','Residents'], datum.Access) >= 0"}
+        ],
+        "mark":{"type":"circle","opacity":0.85,"stroke":"#fff","strokeWidth":1},
+        "encoding":{
+          "x":{"field":"Access","type":"nominal","title":"Access type","sort":["Open","Permit","Residents"],"axis":{"labelAngle":0}},
+          "y":{"field":"ParkingType","type":"nominal","title":"Parking type","sort":["Stands","Shed","Building"]},
+          "size":{"field":"cap_sum","type":"quantitative","title":"Total capacity","scale":{"range":[30,2000]}},
+          "color":{"field":"ParkingType","type":"nominal","title":"Parking type",
+                  "scale":{"domain":["Stands","Shed","Building"],"range":["#3690c0","#74a9cf","#0570b0"]}},
+          "tooltip":[{"field":"ParkingType","title":"Type"},{"field":"Access","title":"Access"},{"field":"cap_sum","type":"quantitative","title":"Total capacity"}]
+        },
+        "title":{"text":"Capacity bubble chart: Parking Type × Access","fontWeight":"bold"}
+      };
+
+      /* ====== The other three charts can stay external (they were working) ====== */
+      const barSpec = {
+        "$schema":"https://vega.github.io/schema/vega-lite/v5.json",
+        "description":"Bike parking places by lighting",
+        "width":"container","height":320,
+        "data":{"url":"bike-data-original.csv"},
+        "transform":[{"calculate":"lower(datum.lit) === 'yes' ? 'Lit' : 'No light'","as":"Lighting"}],
+        "layer":[
+          {"mark":{"type":"bar"},
+          "encoding":{"x":{"field":"Lighting","type":"nominal","sort":["Lit","No light"],"title":"Lighting"},
+                      "y":{"aggregate":"count","type":"quantitative","title":"Count of places"},
+                      "color":{"field":"Lighting","type":"nominal","legend":null,
+                                "scale":{"domain":["Lit","No light"],"range":["#3690c0","#a6bddb"]}}}},
+          {"mark":{"type":"text","dy":-6},
+          "encoding":{"x":{"field":"Lighting","type":"nominal","sort":["Lit","No light"]},
+                      "y":{"aggregate":"count","type":"quantitative"},
+                      "text":{"aggregate":"count","type":"quantitative"}}}
+        ],
+        "title":{"text":"Bike parking places by lighting","fontWeight":"bold"}
+      };
+
+      const donutSpec = {
+        "$schema":"https://vega.github.io/schema/vega-lite/v5.json",
+        "description":"Donut chart: capacity by access type",
+        "width":"container","height":320,
+        "data":{"url":"bike-data-original.csv","format":{"type":"csv"}},
+        "transform":[
+          {"calculate":"lower(datum.access || '')","as":"access_lower"},
+          {"calculate":"datum.access_lower === 'nil' ? 'Open' : datum.access_lower === 'permit' ? 'Permit' : datum.access_lower === 'residents' ? 'Residents' : (datum.access || 'Other')","as":"Access"},
+          {"calculate":"toNumber(datum.capacity || datum.total_capacity || 0)","as":"cap_num"}],
+        "mark":{"type":"arc","innerRadius":110,"outerRadius":150,"stroke":"#fff"},
+        "encoding":{
+          "theta":{"aggregate":"sum","field":"cap_num","type":"quantitative","title":"Total capacity"},
+          "color":{"field":"Access","type":"nominal","title":"Access type",
+                  "scale":{"domain":["Open","Permit","Residents","Other"],"range":["#74a9cf","#3690c0","#0570b0","#a6bddb"]}},
+          "order":{"aggregate":"sum","field":"cap_num","sort":"descending"},
+          "tooltip":[{"field":"Access","title":"Access"},
+                    {"aggregate":"sum","field":"cap_num","type":"quantitative","title":"Total capacity"}]},
+        "title":{"text":"Parking capacity by access type","fontWeight":"bold"}
+      };
+
       const scatterSpec = {
         "$schema":"https://vega.github.io/schema/vega-lite/v5.json",
         "description":"Parking space distribution by capacity and type",
@@ -277,30 +271,31 @@
           {"calculate":"lower(datum.bicycle_parking || '')","as":"type_lower"},
           {"calculate":"datum.type_lower === 'stands' ? 'Stands' : datum.type_lower === 'shed' ? 'Shed' : datum.type_lower === 'building' ? 'Building' : 'Other'","as":"ParkingType"},
           {"calculate":"lower(datum.access || '')","as":"access_lower"},
-          {"calculate":"datum.access_lower === 'nil' ? 'Open' : datum.access_lower === 'permit' ? 'Permit' : datum.access_lower === 'residents' ? 'Residents' : 'Other'","as":"Access"}
-        ],
+          {"calculate":"datum.access_lower === 'nil' ? 'Open' : datum.access_lower === 'permit' ? 'Permit' : datum.access_lower === 'residents' ? 'Residents' : 'Other'","as":"Access"}],
         "mark":{"type":"circle","opacity":0.8},
         "encoding":{
           "x":{"field":"ParkingType","type":"nominal","title":"Parking type","sort":["Stands","Shed","Building","Other"]},
           "y":{"field":"cap_num","type":"quantitative","title":"Capacity per location"},
           "color":{"field":"Access","type":"nominal","title":"Access type",
-            "scale":{"domain":["Open","Permit","Residents","Other"],"range":["#3690c0","#74a9cf","#0570b0","#a6bddb"]}},
+                  "scale":{"domain":["Open","Permit","Residents","Other"],"range":["#3690c0","#74a9cf","#0570b0","#a6bddb"]}},
           "size":{"field":"cap_num","type":"quantitative","title":"Capacity"},
-          "tooltip":[
-            {"field":"ParkingType","title":"Type"},
-            {"field":"Access","title":"Access"},
-            {"field":"cap_num","type":"quantitative","title":"Capacity"}
-          ]
-        },
+          "tooltip":[{"field":"ParkingType","title":"Type"},{"field":"Access","title":"Access"},{"field":"cap_num","type":"quantitative","title":"Capacity"}]},
         "title":{"text":"Parking Space Distribution","fontWeight":"bold"}
       };
 
       /* =============== RENDER CHARTS =============== */
       (async function loadCharts() {
-        try { await vegaEmbed("#lights-chart", barSpec, { actions: false }); } catch (e) { console.error("bar failed:", e); }
-        try { await vegaEmbed("#access-donut", donutSpec, { actions: false }); } catch (e) { console.error("donut failed:", e); }
-        try { await vegaEmbed("#capacity-matrix", matrixSpec, { actions: false }); } catch (e) { console.error("matrix failed:", e); }
-        try { await vegaEmbed("#parking-distribution", scatterSpec, { actions: false }); } catch (e) { console.error("scatter failed:", e); }
+        const embeds = [
+          ["#lights-chart", barSpec],
+          ["#access-donut", donutSpec],
+          ["#capacity-matrix", matrixSpec],
+          ["#parking-distribution", scatterSpec],
+          ["#capacity-bubble", bubbleSpec]
+        ];
+        for (const [sel, spec] of embeds) {
+          try { await vegaEmbed(sel, spec, { actions: false }); }
+          catch (e) { console.error(`Failed chart ${sel}:`, e); }
+        }
       })();
     </script>
   </body>
