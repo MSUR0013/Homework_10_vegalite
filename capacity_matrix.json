@@ -1,0 +1,95 @@
+    {
+    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+    "description": "3x3 matrix: total bike parking capacity by Parking Type (rows) × Access Type (columns), missing combos shown as 0",
+    "width": 420,
+    "height": 420,
+    "data": {
+        "url": "bike-data-original.csv",
+        "format": { "type": "csv" }
+    },
+    "transform": [
+        { "calculate": "lower(datum.bicycle_parking || '')", "as": "type_lower" },
+        {
+        "calculate": "datum.type_lower === 'stands' ? 'Stands' : datum.type_lower === 'shed' ? 'Shed' : datum.type_lower === 'building' ? 'Building' : 'Other'",
+        "as": "ParkingType"
+        },
+        { "calculate": "lower(datum.access || '')", "as": "access_lower" },
+        {
+        "calculate": "datum.access_lower === 'nil' ? 'Open' : datum.access_lower === 'permit' ? 'Permit' : datum.access_lower === 'residents' ? 'Residents' : 'Other'",
+        "as": "Access"
+        },
+        { "calculate": "toNumber(datum.capacity || datum.total_capacity || 0)", "as": "cap_num" },
+
+        /* 1) Aggregate to type×access */
+        {
+        "aggregate": [{"op": "sum", "field": "cap_num", "as": "cap_sum"}],
+        "groupby": ["ParkingType", "Access"]
+        },
+
+        /* 2) Impute missing Access within each ParkingType */
+        {
+        "impute": "cap_sum",
+        "key": "Access",
+        "groupby": ["ParkingType"],
+        "method": "value",
+        "value": 0
+        },
+
+        /* 3) Impute missing ParkingType within each Access */
+        {
+        "impute": "cap_sum",
+        "key": "ParkingType",
+        "groupby": ["Access"],
+        "method": "value",
+        "value": 0
+        },
+
+        /* Keep only the 3×3 we care about */
+        { "filter": "indexof(['Stands','Shed','Building'], datum.ParkingType) >= 0" },
+        { "filter": "indexof(['Open','Permit','Residents'], datum.Access) >= 0" }
+    ],
+    "layer": [
+        {
+        "mark": "rect",
+        "encoding": {
+            "x": {
+            "field": "Access",
+            "type": "nominal",
+            "title": "Access type",
+            "sort": ["Open", "Permit", "Residents"]
+            },
+            "y": {
+            "field": "ParkingType",
+            "type": "nominal",
+            "title": "Parking type",
+            "sort": ["Stands", "Shed", "Building"]
+            },
+            "color": {
+            "field": "cap_sum",
+            "type": "quantitative",
+            "title": "Total capacity",
+            "scale": {"scheme": "blues"}
+            },
+            "tooltip": [
+            {"field": "ParkingType", "type": "nominal"},
+            {"field": "Access", "type": "nominal"},
+            {"field": "cap_sum", "type": "quantitative", "title": "Total capacity"}
+            ]
+        }
+        },
+        {
+        "mark": {"type": "text", "baseline": "middle", "align": "center"},
+        "encoding": {
+            "x": {"field": "Access", "type": "nominal", "sort": ["Open", "Permit", "Residents"]},
+            "y": {"field": "ParkingType", "type": "nominal", "sort": ["Stands", "Shed", "Building"]},
+            "text": {"field": "cap_sum", "type": "quantitative", "format": ".0f"},
+            "color": {
+            "condition": {"test": "datum.cap_sum > 600", "value": "white"},
+            "value": "black"
+            }
+        }
+        }
+    ],
+    "title": {"text": "Capacity by Parking Type × Access", "fontWeight": "bold"},
+    "config": {"view": {"stroke": null}}
+    }

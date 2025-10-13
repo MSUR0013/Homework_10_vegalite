@@ -1,0 +1,34 @@
+    {
+    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+    "description": "Donut chart: total bike parking capacity by access type",
+    "width": 420,
+    "height": 320,
+    "data": {
+        "url": "bike-data-original.csv",
+        "format": { "type": "csv" }
+    },
+    "transform": [
+        { "calculate": "lower(datum.access || '')", "as": "access_lower" },
+        {
+        "calculate": "datum.access_lower === 'nil' ? 'Open' : datum.access_lower === 'permit' ? 'Permit' : datum.access_lower === 'residents' ? 'Residents' : (datum.access || 'Other')",
+        "as": "Access"
+        },
+        { "calculate": "toNumber(datum.capacity || datum.total_capacity || 0)", "as": "cap_num" }
+    ],
+    "mark": { "type": "arc", "innerRadius": 110, "outerRadius": 150, "stroke": "#fff" },
+    "encoding": {
+        "theta": { "aggregate": "sum", "field": "cap_num", "type": "quantitative", "title": "Total capacity" },
+        "color": {
+        "field": "Access",
+        "type": "nominal",
+        "title": "Access type",
+        "scale": { "domain": ["Open", "Permit", "Residents", "Other"], "range": ["#74a9cf", "#3690c0", "#0570b0", "#a6bddb"] }
+        },
+        "order": { "aggregate": "sum", "field": "cap_num", "sort": "descending" },
+        "tooltip": [
+        { "field": "Access", "type": "nominal", "title": "Access" },
+        { "aggregate": "sum", "field": "cap_num", "type": "quantitative", "title": "Total capacity" }
+        ]
+    },
+    "title": { "text": "Parking capacity by access type", "fontWeight": "bold" }
+    }

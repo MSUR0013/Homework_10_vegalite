@@ -1,58 +1,58 @@
 {
-    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-    "description": "Bike parking places by lighting",
-    "width": "container",
-    "height": "container",
-    "data": {
-      "url": "bike-data-original.csv"
-    },
-    "transform": [
-      {
-        "calculate": "lower(datum.lit) === 'yes' ? 'Lit' : 'No light'",
-        "as": "Lighting"
-      }
-    ],
-    "layer": [
-      {
-        "mark": {"type": "bar"},
-        "encoding": {
-          "x": {
-            "field": "Lighting",
-            "type": "nominal",
-            "title": "Lighting",
-            "sort": ["Lit", "No light"]
-          },
-          "y": {
-            "aggregate": "count",
-            "type": "quantitative",
-            "title": "Count of places"
-          },
-          "color": {
-            "field": "Lighting",
-            "type": "nominal",
-            "legend": null,
-            "scale": {
-              "domain": ["Lit", "No light"],
-              "range": ["#3690c0", "#a6bddb"]
-            }
-          },
-          "tooltip": [
-            {"field": "Lighting", "type": "nominal"},
-            {"aggregate": "count", "type": "quantitative", "title": "Count"}
-          ]
-        }
-      },
-      {
-        "mark": {"type": "text", "dy": -6},
-        "encoding": {
-          "x": {"field": "Lighting", "type": "nominal", "sort": ["Lit", "No light"]},
-          "y": {"aggregate": "count", "type": "quantitative"},
-          "text": {"aggregate": "count", "type": "quantitative"}
-        }
-      }
-    ],
-    "title": {
-      "text": "Bike parking places by lighting",
-      "fontWeight": "bold"
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "description": "Bike parking places by lighting",
+  "width": 640,
+  "height": 300,
+  "data": {
+    "url": "bike-data-original.csv"
+  },
+  "transform": [
+    {
+      "calculate": "lower(datum.lit) === 'yes' ? 'Lit' : 'No light'",
+      "as": "Lighting"
     }
+  ],
+  "layer": [
+    {
+      "mark": {"type": "bar"},
+      "encoding": {
+        "x": {
+          "field": "Lighting",
+          "type": "nominal",
+          "title": "Lighting",
+          "sort": ["Lit", "No light"]
+        },
+        "y": {
+          "aggregate": "count",
+          "type": "quantitative",
+          "title": "Count of places"
+        },
+        "color": {
+          "field": "Lighting",
+          "type": "nominal",
+          "legend": null,
+          "scale": {
+            "domain": ["Lit", "No light"],
+            "range": ["#3690c0", "#a6bddb"]
+          }
+        },
+        "tooltip": [
+          {"field": "Lighting", "type": "nominal"},
+          {"aggregate": "count", "type": "quantitative", "title": "Count"}
+        ]
+      }
+    },
+    {
+      "mark": {"type": "text", "dy": -6},
+      "encoding": {
+        "x": {"field": "Lighting", "type": "nominal", "sort": ["Lit", "No light"]},
+        "y": {"aggregate": "count", "type": "quantitative"},
+        "text": {"aggregate": "count", "type": "quantitative"}
+      }
+    }
+  ],
+  "title": {
+    "text": "Bike parking places by lighting",
+    "fontWeight": "bold"
   }
+}

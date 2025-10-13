@@ -1,0 +1,53 @@
+    {
+    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+    "description": "Scatter plot showing parking space distribution by capacity and type",
+    "width": 420,
+    "height": 320,
+    "data": {
+        "url": "bike-data-original.csv",
+        "format": { "type": "csv" }
+    },
+    "transform": [
+        { "calculate": "toNumber(datum.capacity || datum.total_capacity || 0)", "as": "cap_num" },
+        { "calculate": "lower(datum.bicycle_parking || '')", "as": "type_lower" },
+        {
+        "calculate": "datum.type_lower === 'stands' ? 'Stands' : datum.type_lower === 'shed' ? 'Shed' : datum.type_lower === 'building' ? 'Building' : 'Other'",
+        "as": "ParkingType"
+        },
+        { "calculate": "lower(datum.access || '')", "as": "access_lower" },
+        {
+        "calculate": "datum.access_lower === 'nil' ? 'Open' : datum.access_lower === 'permit' ? 'Permit' : datum.access_lower === 'residents' ? 'Residents' : 'Other'",
+        "as": "Access"
+        }
+    ],
+    "mark": { "type": "circle", "tooltip": true, "opacity": 0.8 },
+    "encoding": {
+        "x": {
+        "field": "ParkingType",
+        "type": "nominal",
+        "title": "Parking Type",
+        "sort": ["Stands", "Shed", "Building", "Other"]
+        },
+        "y": {
+        "field": "cap_num",
+        "type": "quantitative",
+        "title": "Capacity per Location"
+        },
+        "color": {
+        "field": "Access",
+        "type": "nominal",
+        "title": "Access Type",
+        "scale": {
+            "domain": ["Open", "Permit", "Residents", "Other"],
+            "range": ["#3690c0", "#74a9cf", "#0570b0", "#a6bddb"]
+        }
+        },
+        "size": { "field": "cap_num", "type": "quantitative", "title": "Capacity" },
+        "tooltip": [
+        { "field": "ParkingType", "title": "Parking Type" },
+        { "field": "Access", "title": "Access" },
+        { "field": "cap_num", "type": "quantitative", "title": "Capacity" }
+        ]
+    },
+    "title": { "text": "Parking Space Distribution", "fontWeight": "bold" }
+    }
