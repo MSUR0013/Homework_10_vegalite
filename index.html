@@ -16,26 +16,36 @@
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
             crossorigin=""></script>
 
-    <!-- Vega libraries -->
+    <!-- Vega -->
     <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
     <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
     <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
 
-    <!-- d3 for CSV used by the map -->
+    <!-- d3 -->
     <script src="https://unpkg.com/d3@7/dist/d3.min.js"></script>
 
     <style>
-      body { padding: 1rem; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background-color: #fafafa; }
-      #map-internal { height: 480px; margin-bottom: 24px; background: #f8f9fb; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,.1); }
+      body { padding: 1rem; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: #fafafa; }
+      h1 { text-align: center; font-size: 2rem; font-weight: 700; color: #034e7b; margin-bottom: 0.75rem; }
+      .intro { margin: 0 auto 1.5rem auto; max-width: 960px; font-size: 1rem; line-height: 1.6; color: #333; text-align: center; }
+      #map-internal { height: 480px; margin-bottom: 24px; background: #f8f9fb; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
       .charts { display: grid; grid-template-columns: 1fr; gap: 24px; }
       @media (min-width: 1100px) { .charts { grid-template-columns: 1fr 1fr; } }
-      .chart { min-height: 360px; background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,.1); padding: 8px; }
-      /* make the bigger ones span full width */
+      .chart { min-height: 360px; background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); padding: 8px; }
       #capacity-matrix, #parking-distribution, #capacity-bubble { grid-column: 1 / -1; }
     </style>
   </head>
   <body>
     <h1>Clayton Campus Bike Availability</h1>
+
+    <div class="intro">
+      Cycling is one of the most sustainable and efficient ways to move around urban areas.
+      At Monash University’s Clayton campus, bike use helps reduce traffic congestion,
+      lower carbon emissions, and promote healthier lifestyles among students and staff.
+      The university supports this through well-distributed bike parking zones, lighting for safety at night,
+      and access options suited to different users. The map below shows the spatial distribution of bike parking
+      availability across the Clayton campus, helping cyclists find convenient and secure places to park their bikes.
+    </div>
 
     <form id="filter" class="pure-form pure-form-stacked">
       <label for="filter-is-lit">Lit during night</label>
@@ -60,7 +70,6 @@
 
     <div id="map-internal"></div>
 
-    <!-- Charts -->
     <div class="charts">
       <div id="lights-chart" class="chart"></div>
       <div id="access-donut" class="chart"></div>
@@ -70,102 +79,67 @@
     </div>
 
     <script>
-      /* ================== MAP ================== */
-      function getColorShade(scale) {
-        if (scale >= 0.125) return "#034e7b";
-        if (scale >= 0.100) return "#0570b0";
-        if (scale >= 0.075) return "#3690c0";
-        if (scale >= 0.050) return "#74a9cf";
-        if (scale >= 0.025) return "#a6bddb";
-        if (scale > 0) return "#d0d1e6";
-        return "#f1eef6";
-      }
+      /* ===== Map ===== */
+      function getColorShade(s){ if(s>=.125)return"#034e7b"; if(s>=.1)return"#0570b0"; if(s>=.075)return"#3690c0"; if(s>=.05)return"#74a9cf"; if(s>=.025)return"#a6bddb"; if(s>0)return"#d0d1e6"; return"#f1eef6"; }
 
-      function styleGroup(groupData, aggregateData) {
-        const form = document.getElementById("filter").elements;
-        const isLit = form.namedItem("filter-is-lit").checked;
-        const parkingType = form.namedItem("filter-parking-type").value;
-        const parkingAccess = form.namedItem("filter-parking-access").value;
-
-        let grandTotalCapacity = 0, totalCapacity = 0;
-
-        aggregateData.forEach(function (row) {
-          if (isLit && row.lit !== "yes") return;
-          if (parkingType !== "all" && row.bicycle_parking !== parkingType) return;
-          if (parkingAccess !== "all" && row.access !== parkingAccess) return;
-
-          grandTotalCapacity += Number(row.total_capacity);
-          if (row.group !== groupData.properties.group) return;
-          totalCapacity += Number(row.total_capacity);
+      function styleGroup(f,agg){
+        const els=document.getElementById("filter").elements;
+        const isLit=els.namedItem("filter-is-lit").checked;
+        const pType=els.namedItem("filter-parking-type").value;
+        const acc=els.namedItem("filter-parking-access").value;
+        let grand=0, total=0;
+        agg.forEach(r=>{
+          if(isLit && r.lit!=="yes") return;
+          if(pType!=="all" && r.bicycle_parking!==pType) return;
+          if(acc!=="all" && r.access!==acc) return;
+          grand+=Number(r.total_capacity);
+          if(r.group!==f.properties.group) return;
+          total+=Number(r.total_capacity);
         });
-
-        const shade = getColorShade(grandTotalCapacity ? totalCapacity / grandTotalCapacity : 0);
-        return { fillColor: shade, weight: 2, opacity: 1, fillOpacity: 0.7, color: "#034e7b", dashArray: "3" };
+        return { fillColor:getColorShade(grand? total/grand:0), weight:2, opacity:1, fillOpacity:.7, color:"#034e7b", dashArray:"3" };
       }
 
-      (async function initMap() {
-        try {
-          const map = L.map("map-internal").setView([-37.909, 145.136], 15);
-          L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            maxZoom: 19,
-            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          }).addTo(map);
-
-          const [groupData, aggregateData] = await Promise.all([
-            fetch("monash-clayton-groups.json").then(r => r.json()),
-            d3.csv("bike-data-per-group.csv")
-          ]);
-
-          const groupLayer = L.geoJson(groupData, {
-            onEachFeature: function (feature, layer) {
-              layer.on("click", function () {
-                const form = document.getElementById("filter").elements;
-                const isLit = form.namedItem("filter-is-lit").checked;
-                const parkingType = form.namedItem("filter-parking-type").value;
-                const parkingAccess = form.namedItem("filter-parking-access").value;
-
-                let totalCapacity = 0, totalLocations = 0;
-                let grandTotalCapacity = 0, grandTotalLocations = 0;
-
-                aggregateData.forEach(function (row) {
-                  if (isLit && row.lit !== "yes") return;
-                  if (parkingType !== "all" && row.bicycle_parking !== parkingType) return;
-                  if (parkingAccess !== "all" && row.access !== parkingAccess) return;
-
-                  grandTotalCapacity += Number(row.total_capacity);
-                  grandTotalLocations += Number(row.total_locations);
-                  if (row.group !== feature.properties.group) return;
-                  totalCapacity += Number(row.total_capacity);
-                  totalLocations += Number(row.total_locations);
+      (async function(){
+        try{
+          const map=L.map("map-internal").setView([-37.909,145.136],15);
+          L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:'&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(map);
+          const [groups, agg]=await Promise.all([fetch("monash-clayton-groups.json").then(r=>r.json()), d3.csv("bike-data-per-group.csv")]);
+          const layer=L.geoJson(groups,{
+            onEachFeature:(f,l)=>{
+              l.on("click", ()=>{
+                const els=document.getElementById("filter").elements;
+                const isLit=els.namedItem("filter-is-lit").checked;
+                const pType=els.namedItem("filter-parking-type").value;
+                const acc=els.namedItem("filter-parking-access").value;
+                let totC=0, totL=0, gC=0, gL=0;
+                agg.forEach(r=>{
+                  if(isLit && r.lit!=="yes") return;
+                  if(pType!=="all" && r.bicycle_parking!==pType) return;
+                  if(acc!=="all" && r.access!==acc) return;
+                  gC+=Number(r.total_capacity); gL+=Number(r.total_locations);
+                  if(r.group!==f.properties.group) return;
+                  totC+=Number(r.total_capacity); totL+=Number(r.total_locations);
                 });
-
-                layer.bindPopup(
-                  `<h4>${feature.properties.name}</h4>
-                  <p>Total parking spots: ${totalLocations} (out of ${grandTotalLocations})</p>
-                  <p>Total capacity: ${totalCapacity} bikes (out of ${grandTotalCapacity})</p>`
-                ).openPopup();
+                l.bindPopup(`<h4>${f.properties.name}</h4><p>Total parking spots: ${totL} (out of ${gL})</p><p>Total capacity: ${totC} bikes (out of ${gC})</p>`).openPopup();
               });
             },
-            style: f => styleGroup(f, aggregateData)
+            style:(f)=>styleGroup(f,agg)
           }).addTo(map);
-
-          document.getElementById("filter").addEventListener("change", () => groupLayer.resetStyle());
-        } catch (err) {
-          console.error("Map failed:", err);
-        }
+          document.getElementById("filter").addEventListener("change", ()=>layer.resetStyle());
+        }catch(e){console.error("Map failed:",e);}
       })();
 
-      /* ====== INLINE SPECS FOR MATRIX + BUBBLE (the flaky ones) ====== */
+      /* ===== Inline Matrix Chart ===== */
       const matrixSpec = {
         "$schema":"https://vega.github.io/schema/vega-lite/v5.json",
-        "description":"3x3 matrix with imputed zeros",
+        "description":"3x3 matrix showing total capacity by parking type × access",
         "width":"container","height":420,
         "data":{"url":"bike-data-original.csv","format":{"type":"csv"}},
         "transform":[
           {"calculate":"lower(datum.bicycle_parking || '')","as":"type_lower"},
-          {"calculate":"datum.type_lower === 'stands' ? 'Stands' : datum.type_lower === 'shed' ? 'Shed' : datum.type_lower === 'building' ? 'Building' : 'Other'","as":"ParkingType"},
+          {"calculate":"datum.type_lower==='stands' ? 'Stands' : datum.type_lower==='shed' ? 'Shed' : datum.type_lower==='building' ? 'Building' : 'Other'","as":"ParkingType"},
           {"calculate":"lower(datum.access || '')","as":"access_lower"},
-          {"calculate":"datum.access_lower === 'nil' ? 'Open' : datum.access_lower === 'permit' ? 'Permit' : datum.access_lower === 'residents' ? 'Residents' : 'Other'","as":"Access"},
+          {"calculate":"datum.access_lower==='nil' ? 'Open' : datum.access_lower==='permit' ? 'Permit' : datum.access_lower==='residents' ? 'Residents' : 'Other'","as":"Access"},
           {"calculate":"toNumber(datum.capacity || datum.total_capacity || 0)","as":"cap_num"},
           {"aggregate":[{"op":"sum","field":"cap_num","as":"cap_sum"}],"groupby":["ParkingType","Access"]},
           {"impute":"cap_sum","key":"Access","groupby":["ParkingType"],"method":"value","value":0},
@@ -175,10 +149,10 @@
         ],
         "layer":[
           {"mark":"rect","encoding":{
-            "x":{"field":"Access","type":"nominal","sort":["Open","Permit","Residents"],"title":"Access type"},
-            "y":{"field":"ParkingType","type":"nominal","sort":["Stands","Shed","Building"],"title":"Parking type"},
-            "color":{"field":"cap_sum","type":"quantitative","title":"Total capacity","scale":{"scheme":"blues"}},
-            "tooltip":[{"field":"ParkingType"},{"field":"Access"},{"field":"cap_sum","title":"Total capacity"}]
+            "x":{"field":"Access","type":"nominal","title":"Access Type","sort":["Open","Permit","Residents"]},
+            "y":{"field":"ParkingType","type":"nominal","title":"Parking Type","sort":["Stands","Shed","Building"]},
+            "color":{"field":"cap_sum","type":"quantitative","title":"Total Capacity","scale":{"scheme":"blues"}},
+            "tooltip":[{"field":"ParkingType"},{"field":"Access"},{"field":"cap_sum","type":"quantitative","title":"Total Capacity"}]
           }},
           {"mark":{"type":"text","baseline":"middle","align":"center"},
           "encoding":{
@@ -188,113 +162,22 @@
             "color":{"condition":{"test":"datum.cap_sum > 600","value":"white"},"value":"black"}
           }}
         ],
-        "title":{"text":"Capacity by Parking Type × Access","fontWeight":"bold"}
+        "title":{"text":"Capacity Matrix (Parking Type × Access)","fontSize":16,"fontWeight":"bold","anchor":"middle"}
       };
 
-      const bubbleSpec = {
-        "$schema":"https://vega.github.io/schema/vega-lite/v5.json",
-        "description":"Bubble chart: total capacity by Parking Type × Access",
-        "width":"container","height":360,
-        "data":{"url":"bike-data-original.csv","format":{"type":"csv"}},
-        "transform":[
-          {"calculate":"toNumber(datum.capacity || datum.total_capacity || 0)","as":"cap_num"},
-          {"calculate":"lower(datum.bicycle_parking || '')","as":"type_lower"},
-          {"calculate":"datum.type_lower === 'stands' ? 'Stands' : datum.type_lower === 'shed' ? 'Shed' : datum.type_lower === 'building' ? 'Building' : 'Other'","as":"ParkingType"},
-          {"calculate":"lower(datum.access || '')","as":"access_lower"},
-          {"calculate":"datum.access_lower === 'nil' ? 'Open' : datum.access_lower === 'permit' ? 'Permit' : datum.access_lower === 'residents' ? 'Residents' : 'Other'","as":"Access"},
-          {"aggregate":[{"op":"sum","field":"cap_num","as":"cap_sum"}],"groupby":["ParkingType","Access"]},
-          {"impute":"cap_sum","key":"Access","groupby":["ParkingType"],"method":"value","value":0},
-          {"impute":"cap_sum","key":"ParkingType","groupby":["Access"],"method":"value","value":0},
-          {"filter":"indexof(['Stands','Shed','Building'], datum.ParkingType) >= 0"},
-          {"filter":"indexof(['Open','Permit','Residents'], datum.Access) >= 0"}
-        ],
-        "mark":{"type":"circle","opacity":0.85,"stroke":"#fff","strokeWidth":1},
-        "encoding":{
-          "x":{"field":"Access","type":"nominal","title":"Access type","sort":["Open","Permit","Residents"],"axis":{"labelAngle":0}},
-          "y":{"field":"ParkingType","type":"nominal","title":"Parking type","sort":["Stands","Shed","Building"]},
-          "size":{"field":"cap_sum","type":"quantitative","title":"Total capacity","scale":{"range":[30,2000]}},
-          "color":{"field":"ParkingType","type":"nominal","title":"Parking type",
-                  "scale":{"domain":["Stands","Shed","Building"],"range":["#3690c0","#74a9cf","#0570b0"]}},
-          "tooltip":[{"field":"ParkingType","title":"Type"},{"field":"Access","title":"Access"},{"field":"cap_sum","type":"quantitative","title":"Total capacity"}]
-        },
-        "title":{"text":"Capacity bubble chart: Parking Type × Access","fontWeight":"bold"}
-      };
+      /* ===== Load External Charts + Matrix Inline ===== */
+      (async function loadCharts(){
+        try{ await vegaEmbed("#capacity-matrix", matrixSpec, { actions:false }); }catch(e){ console.error("Matrix failed:", e); }
 
-      /* ====== The other three charts can stay external (they were working) ====== */
-      const barSpec = {
-        "$schema":"https://vega.github.io/schema/vega-lite/v5.json",
-        "description":"Bike parking places by lighting",
-        "width":"container","height":320,
-        "data":{"url":"bike-data-original.csv"},
-        "transform":[{"calculate":"lower(datum.lit) === 'yes' ? 'Lit' : 'No light'","as":"Lighting"}],
-        "layer":[
-          {"mark":{"type":"bar"},
-          "encoding":{"x":{"field":"Lighting","type":"nominal","sort":["Lit","No light"],"title":"Lighting"},
-                      "y":{"aggregate":"count","type":"quantitative","title":"Count of places"},
-                      "color":{"field":"Lighting","type":"nominal","legend":null,
-                                "scale":{"domain":["Lit","No light"],"range":["#3690c0","#a6bddb"]}}}},
-          {"mark":{"type":"text","dy":-6},
-          "encoding":{"x":{"field":"Lighting","type":"nominal","sort":["Lit","No light"]},
-                      "y":{"aggregate":"count","type":"quantitative"},
-                      "text":{"aggregate":"count","type":"quantitative"}}}
-        ],
-        "title":{"text":"Bike parking places by lighting","fontWeight":"bold"}
-      };
-
-      const donutSpec = {
-        "$schema":"https://vega.github.io/schema/vega-lite/v5.json",
-        "description":"Donut chart: capacity by access type",
-        "width":"container","height":320,
-        "data":{"url":"bike-data-original.csv","format":{"type":"csv"}},
-        "transform":[
-          {"calculate":"lower(datum.access || '')","as":"access_lower"},
-          {"calculate":"datum.access_lower === 'nil' ? 'Open' : datum.access_lower === 'permit' ? 'Permit' : datum.access_lower === 'residents' ? 'Residents' : (datum.access || 'Other')","as":"Access"},
-          {"calculate":"toNumber(datum.capacity || datum.total_capacity || 0)","as":"cap_num"}],
-        "mark":{"type":"arc","innerRadius":110,"outerRadius":150,"stroke":"#fff"},
-        "encoding":{
-          "theta":{"aggregate":"sum","field":"cap_num","type":"quantitative","title":"Total capacity"},
-          "color":{"field":"Access","type":"nominal","title":"Access type",
-                  "scale":{"domain":["Open","Permit","Residents","Other"],"range":["#74a9cf","#3690c0","#0570b0","#a6bddb"]}},
-          "order":{"aggregate":"sum","field":"cap_num","sort":"descending"},
-          "tooltip":[{"field":"Access","title":"Access"},
-                    {"aggregate":"sum","field":"cap_num","type":"quantitative","title":"Total capacity"}]},
-        "title":{"text":"Parking capacity by access type","fontWeight":"bold"}
-      };
-
-      const scatterSpec = {
-        "$schema":"https://vega.github.io/schema/vega-lite/v5.json",
-        "description":"Parking space distribution by capacity and type",
-        "width":"container","height":320,
-        "data":{"url":"bike-data-original.csv","format":{"type":"csv"}},
-        "transform":[
-          {"calculate":"toNumber(datum.capacity || datum.total_capacity || 0)","as":"cap_num"},
-          {"calculate":"lower(datum.bicycle_parking || '')","as":"type_lower"},
-          {"calculate":"datum.type_lower === 'stands' ? 'Stands' : datum.type_lower === 'shed' ? 'Shed' : datum.type_lower === 'building' ? 'Building' : 'Other'","as":"ParkingType"},
-          {"calculate":"lower(datum.access || '')","as":"access_lower"},
-          {"calculate":"datum.access_lower === 'nil' ? 'Open' : datum.access_lower === 'permit' ? 'Permit' : datum.access_lower === 'residents' ? 'Residents' : 'Other'","as":"Access"}],
-        "mark":{"type":"circle","opacity":0.8},
-        "encoding":{
-          "x":{"field":"ParkingType","type":"nominal","title":"Parking type","sort":["Stands","Shed","Building","Other"]},
-          "y":{"field":"cap_num","type":"quantitative","title":"Capacity per location"},
-          "color":{"field":"Access","type":"nominal","title":"Access type",
-                  "scale":{"domain":["Open","Permit","Residents","Other"],"range":["#3690c0","#74a9cf","#0570b0","#a6bddb"]}},
-          "size":{"field":"cap_num","type":"quantitative","title":"Capacity"},
-          "tooltip":[{"field":"ParkingType","title":"Type"},{"field":"Access","title":"Access"},{"field":"cap_num","type":"quantitative","title":"Capacity"}]},
-        "title":{"text":"Parking Space Distribution","fontWeight":"bold"}
-      };
-
-      /* =============== RENDER CHARTS =============== */
-      (async function loadCharts() {
-        const embeds = [
-          ["#lights-chart", barSpec],
-          ["#access-donut", donutSpec],
-          ["#capacity-matrix", matrixSpec],
-          ["#parking-distribution", scatterSpec],
-          ["#capacity-bubble", bubbleSpec]
+        const charts = [
+          ["#lights-chart", "bar_chart.json"],
+          ["#access-donut", "access_donut.json"],
+          ["#parking-distribution", "parking_distribution.json"],
+          ["#capacity-bubble", "capacity_bubble.json"]
         ];
-        for (const [sel, spec] of embeds) {
-          try { await vegaEmbed(sel, spec, { actions: false }); }
-          catch (e) { console.error(`Failed chart ${sel}:`, e); }
+        for (const [sel, file] of charts){
+          try{ await vegaEmbed(sel, file, { actions:false }); }
+          catch(e){ console.error(`Failed to load ${file}:`, e); }
         }
       })();
     </script>
