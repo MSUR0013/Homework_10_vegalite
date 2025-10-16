@@ -1,8 +1,8 @@
     {
     "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
     "description": "Scatter plot showing parking space distribution by capacity and type",
-    "width": 420,
-    "height": 320,
+    "width": 500,
+    "height": 420,
     "data": {
         "url": "bike-data-original.csv",
         "format": { "type": "csv" }
@@ -11,8 +11,8 @@
         { "calculate": "toNumber(datum.capacity || datum.total_capacity || 0)", "as": "cap_num" },
         { "calculate": "lower(datum.bicycle_parking || '')", "as": "type_lower" },
         {
-        "calculate": "datum.type_lower === 'stands' ? 'Stands' : datum.type_lower === 'shed' ? 'Shed' : datum.type_lower === 'building' ? 'Building' : 'Other'",
-        "as": "ParkingType"
+        "calculate": "datum.group",
+        "as": "GroupOrFaculty"
         },
         { "calculate": "lower(datum.access || '')", "as": "access_lower" },
         {
@@ -22,16 +22,16 @@
     ],
     "mark": { "type": "circle", "tooltip": true, "opacity": 0.8 },
     "encoding": {
-        "x": {
-        "field": "ParkingType",
-        "type": "nominal",
-        "title": "Parking Type",
-        "sort": ["Stands", "Shed", "Building", "Other"]
-        },
         "y": {
+        "field": "GroupOrFaculty",
+        "type": "nominal",
+        "title": "Group or Faculty"
+        },
+        "x": {
         "field": "cap_num",
         "type": "quantitative",
-        "title": "Capacity per Location"
+        "title": "Capacity per Location",
+        "scale": {"type": "log"}
         },
         "color": {
         "field": "Access",
@@ -44,7 +44,7 @@
         },
         "size": { "field": "cap_num", "type": "quantitative", "title": "Capacity" },
         "tooltip": [
-        { "field": "ParkingType", "title": "Parking Type" },
+        { "field": "GroupOrFaculty", "title": "Group or Faculty" },
         { "field": "Access", "title": "Access" },
         { "field": "cap_num", "type": "quantitative", "title": "Capacity" }
         ]

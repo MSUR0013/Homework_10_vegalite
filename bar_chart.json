@@ -1,7 +1,7 @@
 {
   "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
   "description": "Bike parking places by lighting",
-  "width": 640,
+  "width": 500,
   "height": 300,
   "data": {
     "url": "bike-data-original.csv"
@@ -16,13 +16,13 @@
     {
       "mark": {"type": "bar"},
       "encoding": {
-        "x": {
+        "y": {
           "field": "Lighting",
           "type": "nominal",
           "title": "Lighting",
           "sort": ["Lit", "No light"]
         },
-        "y": {
+        "x": {
           "aggregate": "count",
           "type": "quantitative",
           "title": "Count of places"
@@ -45,8 +45,8 @@
     {
       "mark": {"type": "text", "dy": -6},
       "encoding": {
-        "x": {"field": "Lighting", "type": "nominal", "sort": ["Lit", "No light"]},
-        "y": {"aggregate": "count", "type": "quantitative"},
+        "y": {"field": "Lighting", "type": "nominal", "sort": ["Lit", "No light"]},
+        "x": {"aggregate": "count", "type": "quantitative"},
         "text": {"aggregate": "count", "type": "quantitative"}
       }
     }

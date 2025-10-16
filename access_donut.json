@@ -1,8 +1,8 @@
     {
     "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
     "description": "Donut chart: total bike parking capacity by access type",
-    "width": 420,
-    "height": 320,
+    "width": 500,
+    "height": 420,
     "data": {
         "url": "bike-data-original.csv",
         "format": { "type": "csv" }
@@ -10,7 +10,7 @@
     "transform": [
         { "calculate": "lower(datum.access || '')", "as": "access_lower" },
         {
-        "calculate": "datum.access_lower === 'nil' ? 'Open' : datum.access_lower === 'permit' ? 'Permit' : datum.access_lower === 'residents' ? 'Residents' : (datum.access || 'Other')",
+        "calculate": "datum.access_lower === 'nil' ? 'Open' : datum.access_lower === 'permit' ? 'Permit' : datum.access_lower === 'residents' ? 'Residents' : 'Other'",
         "as": "Access"
         },
         { "calculate": "toNumber(datum.capacity || datum.total_capacity || 0)", "as": "cap_num" }

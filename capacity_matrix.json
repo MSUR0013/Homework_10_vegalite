@@ -1,7 +1,7 @@
     {
     "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
     "description": "3x3 matrix: total bike parking capacity by Parking Type (rows) × Access Type (columns), missing combos shown as 0",
-    "width": 420,
+    "width": 500,
     "height": 420,
     "data": {
         "url": "bike-data-original.csv",

@@ -1,0 +1,31 @@
+{
+    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+    "description": "Donut chart: total bike parking capacity by faculty",
+    "width": 500,
+    "height": 420,
+    "data": {
+    "url": "bike-data-original.csv",
+    "format": { "type": "csv" }
+    },
+    "transform": [
+    {
+        "calculate": "datum.access !== 'nil' ? 0 : datum.capacity == 'nil' ? 0 : toNumber(datum.capacity || 0)",
+        "as": "cap_num"
+    }
+    ],
+    "mark": { "type": "arc", "innerRadius": 110, "outerRadius": 150, "stroke": "#fff" },
+    "encoding": {
+    "theta": { "aggregate": "sum", "field": "cap_num", "type": "quantitative", "title": "Total capacity" },
+    "color": {
+    "field": "group",
+    "type": "nominal",
+    "title": "Group or Faculty"
+    },
+    "order": { "aggregate": "sum", "field": "cap_num", "sort": "descending" },
+    "tooltip": [
+    { "field": "group", "type": "nominal", "title": "Group or Faculty" },
+    { "aggregate": "sum", "field": "cap_num", "type": "quantitative", "title": "Total capacity", "format": ",d" }
+    ]
+    },
+    "title": { "text": "Parking capacity by faculty", "fontWeight": "bold" }
+    }

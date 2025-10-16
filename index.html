@@ -31,12 +31,18 @@
       #map-internal { height: 480px; margin-bottom: 24px; background: #f8f9fb; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
       .charts { display: grid; grid-template-columns: 1fr; gap: 24px; }
       @media (min-width: 1100px) { .charts { grid-template-columns: 1fr 1fr; } }
-      .chart { min-height: 360px; background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); padding: 8px; }
-      #capacity-matrix, #parking-distribution, #capacity-bubble { grid-column: 1 / -1; }
+      .chart { min-height: 500px; background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); padding: 2rem; display: flex; flex-direction: column; align-items: center; }
+      .chart > h2 { margin: 0; }
+      .chart.wide { grid-column: 1 / -1; }
     </style>
   </head>
   <body>
     <h1>Clayton Campus Bike Availability</h1>
+
+    <div class="intro">
+      <p>Prepared by <strong>Matthew Sastra Surya (ID: 34393021)</strong>, published on 20/10/2025.</p>
+      <p>Parking data captured from OpenStreetMap on 08/10/2025.</p>
+    </div>
 
     <div class="intro">
       Cycling is one of the most sustainable and efficient ways to move around urban areas.
@@ -47,35 +53,85 @@
       availability across the Clayton campus, helping cyclists find convenient and secure places to park their bikes.
     </div>
 
-    <form id="filter" class="pure-form pure-form-stacked">
-      <label for="filter-is-lit">Lit during night</label>
-      <input id="filter-is-lit" type="checkbox">
+    <form id="filter" class="pure-form pure-form-aligned pure-g">
+      <fieldset class="pure-u-1-2">
+        <h3>Filter Map Data</h3>
+        <div class="pure-control-group">
+          <label for="filter-parking-type">Parking Type</label>
+          <select id="filter-parking-type" class="pure-input-1-4">
+            <option value="all">All Types</option>
+            <option value="stands">Bike Stands/Racks</option>
+            <option value="shed">Bike Shed</option>
+            <option value="building">Indoor Bike Stations</option>
+          </select>
+        </div>
+        
+        <div class="pure-control-group">
+          <label for="filter-parking-access">Parking Access</label>
+          <select id="filter-parking-access" class="pure-input-1-4">
+            <option value="all">All Access Types</option>
+            <option value="nil">Open</option>
+            <option value="permit">Permit</option>
+            <option value="residents">Residents</option>
+          </select>
+        </div>
 
-      <label for="filter-parking-type">Parking type</label>
-      <select id="filter-parking-type">
-        <option value="all">All</option>
-        <option value="stands">Bike Stands/Racks</option>
-        <option value="shed">Bike Shed</option>
-        <option value="building">Indoor Bike Stations</option>
-      </select>
-
-      <label for="filter-parking-access">Parking access</label>
-      <select id="filter-parking-access">
-        <option value="all">All</option>
-        <option value="nil">Open</option>
-        <option value="permit">Permit</option>
-        <option value="residents">Residents</option>
-      </select>
+        <div class="pure-controls">
+          <label for="filter-is-lit" class="pure-checkbox">
+            <input id="filter-is-lit" type="checkbox"> Lit during night
+          </label>
+        </div>
+      </fieldset>
+      <fieldset class="pure-u-1-2">
+        <h3>Legend</h3>
+        <p>The color shades are based on how many bikes each area can park.</p>
+        <ul>
+          <li><div style="background-color: #034e7b; display: inline-block; height: 1rem; width: 1rem;"></div> &ge;12.5% (of the overall total capacity in Clayton campus)</li>
+          <li><div style="background-color: #0570b0; display: inline-block; height: 1rem; width: 1rem;"></div> 10.0-12.5%</li>
+          <li><div style="background-color: #3690c0; display: inline-block; height: 1rem; width: 1rem;"></div> 7.5-10.0%</li>
+          <li><div style="background-color: #74a9cf; display: inline-block; height: 1rem; width: 1rem;"></div> 5.0-7.5%</li>
+          <li><div style="background-color: #a6bddb; display: inline-block; height: 1rem; width: 1rem;"></div> 2.5-5.0%</li>
+          <li><div style="background-color: #d0d1e6; display: inline-block; height: 1rem; width: 1rem;"></div> &lt;2.5%</li>
+          <li><div style="background-color: #f1eef6; display: inline-block; height: 1rem; width: 1rem;"></div> No data</li>
+        </ul>
+        <p>Click on each segment to reveal the numbers.</p>
+      </fieldset>
     </form>
 
     <div id="map-internal"></div>
 
     <div class="charts">
-      <div id="lights-chart" class="chart"></div>
-      <div id="access-donut" class="chart"></div>
-      <div id="capacity-matrix" class="chart"></div>
-      <div id="parking-distribution" class="chart"></div>
-      <div id="capacity-bubble" class="chart"></div>
+      <div class="chart">
+        <h2>Chart of Lit</h2>
+        <p>Lighting plays a key role in making bike parking safe and convenient at night. Well-lit areas help people returning late find and unlock their bikes more easily while feeling secure. This chart highlights how lighting affects accessibility and comfort for cyclists who rely on these facilities after dark.</p>
+        <div id="lights-chart"></div>
+      </div>
+
+      <div class="chart">
+        <h2>Chart of Access Type</h2>
+        <p>Most bike parking areas are open for general use, while only a small share requires special access such as permits or residential permission. This setup makes parking more flexible and convenient for everyday cyclists, encouraging more people to ride without worrying about restrictions or access limitations.</p>
+        <div id="access-donut"></div>
+      </div>
+
+      <div class="chart wide">
+        <h2>Chart of Parking Availabality by Direction</h2>
+        <p>Capacity clusters in the east and central zones. The north‑east holds the most spaces (444), followed by middle‑central (381) and north‑central (373). Western zones are light, especially the south‑west (36) and north‑west (52). Use this to guide where you look for a spot at busy times. Boundaries: W1 Car Park, Scenic Boulevard, and Monash College or John Monash Science School.</p>
+        <div id="capacity-matrix"></div>
+      </div>
+  
+
+      <div class="chart">
+        <h2>Capacity Distribution of Parking spot by Group of Faculty</h2>
+        <p>This chart shows how bike parking capacity is spread across groups and faculties. Each circle is a location. Position to the right means more spaces per location. Larger circles mean higher capacity. Colors show whether access is open, permit, residents, or other. Most locations sit in the mid range, with a few high‑capacity hubs. Use the larger circles on the right to find easier parking during busy times.</p>
+        <div id="parking-distribution"></div>
+      </div>
+
+      <div class="chart">
+        <h2>Chart of Campus Area</h2>
+        <p>This donut chart shows how bike parking capacity is split across faculties and key sites. Larger segments mean more spaces. You can spot where capacity is concentrated and which areas contribute less. Use the biggest segments to decide where to look first for a spot or where to target upgrades.</p>
+        <div id="capacity-bubble"></div>
+      </div>
+
     </div>
 
     <script>
@@ -133,36 +189,34 @@
       const matrixSpec = {
         "$schema":"https://vega.github.io/schema/vega-lite/v5.json",
         "description":"3x3 matrix showing total capacity by parking type × access",
-        "width":"container","height":420,
+        "width":500,"height":420,
         "data":{"url":"bike-data-original.csv","format":{"type":"csv"}},
         "transform":[
-          {"calculate":"lower(datum.bicycle_parking || '')","as":"type_lower"},
-          {"calculate":"datum.type_lower==='stands' ? 'Stands' : datum.type_lower==='shed' ? 'Shed' : datum.type_lower==='building' ? 'Building' : 'Other'","as":"ParkingType"},
-          {"calculate":"lower(datum.access || '')","as":"access_lower"},
-          {"calculate":"datum.access_lower==='nil' ? 'Open' : datum.access_lower==='permit' ? 'Permit' : datum.access_lower==='residents' ? 'Residents' : 'Other'","as":"Access"},
-          {"calculate":"toNumber(datum.capacity || datum.total_capacity || 0)","as":"cap_num"},
-          {"aggregate":[{"op":"sum","field":"cap_num","as":"cap_sum"}],"groupby":["ParkingType","Access"]},
-          {"impute":"cap_sum","key":"Access","groupby":["ParkingType"],"method":"value","value":0},
-          {"impute":"cap_sum","key":"ParkingType","groupby":["Access"],"method":"value","value":0},
-          {"filter":"indexof(['Stands','Shed','Building'], datum.ParkingType) >= 0"},
-          {"filter":"indexof(['Open','Permit','Residents'], datum.Access) >= 0"}
+          {"calculate":"datum.lat > -37.910 ? 'North' : datum.lat > -37.913 ? 'Middle' : 'South'","as":"Latitude"},
+          {"calculate":"datum.lon < 145.131 ? 'West' : datum.lon < 145.134 ? 'Central' : 'East'","as":"Longitude"},
+          {"calculate":"datum.capacity === 'nil' ? 0 : toNumber(datum.capacity || 0)","as":"cap_num"},
+          {"aggregate":[{"op":"sum","field":"cap_num","as":"cap_sum"}],"groupby":["Latitude","Longitude"]},
+          {"impute":"cap_sum","key":"Latitude","groupby":["Longitude"],"method":"value","value":0},
+          {"impute":"cap_sum","key":"Longitude","groupby":["Latitude"],"method":"value","value":0},
+          {"filter":"indexof(['West','Central','East'], datum.Longitude) >= 0"},
+          {"filter":"indexof(['North','Middle','South'], datum.Latitude) >= 0"}
         ],
         "layer":[
           {"mark":"rect","encoding":{
-            "x":{"field":"Access","type":"nominal","title":"Access Type","sort":["Open","Permit","Residents"]},
-            "y":{"field":"ParkingType","type":"nominal","title":"Parking Type","sort":["Stands","Shed","Building"]},
+            "x":{"field":"Longitude","type":"nominal","title":"Longitude","sort":["West","Central","East"]},
+            "y":{"field":"Latitude","type":"nominal","title":"Latitude","sort":["North","Middle","South"]},
             "color":{"field":"cap_sum","type":"quantitative","title":"Total Capacity","scale":{"scheme":"blues"}},
-            "tooltip":[{"field":"ParkingType"},{"field":"Access"},{"field":"cap_sum","type":"quantitative","title":"Total Capacity"}]
+            "tooltip":[{"field":"Latitude"},{"field":"Longitude"},{"field":"cap_sum","type":"quantitative","title":"Total Capacity"}]
           }},
           {"mark":{"type":"text","baseline":"middle","align":"center"},
           "encoding":{
-            "x":{"field":"Access","type":"nominal","sort":["Open","Permit","Residents"]},
-            "y":{"field":"ParkingType","type":"nominal","sort":["Stands","Shed","Building"]},
+            "x":{"field":"Longitude","type":"nominal","sort":["West","Central","East"]},
+            "y":{"field":"Latitude","type":"nominal","sort":["North","Middle","South"]},
             "text":{"field":"cap_sum","type":"quantitative","format":".0f"},
             "color":{"condition":{"test":"datum.cap_sum > 600","value":"white"},"value":"black"}
           }}
         ],
-        "title":{"text":"Capacity Matrix (Parking Type × Access)","fontSize":16,"fontWeight":"bold","anchor":"middle"}
+        "title":{"text":"Capacity Matrix (Latitude × Longtitude)","fontSize":16,"fontWeight":"bold","anchor":"middle"}
       };
 
       /* ===== Load External Charts + Matrix Inline ===== */
@@ -173,7 +227,8 @@
           ["#lights-chart", "bar_chart.json"],
           ["#access-donut", "access_donut.json"],
           ["#parking-distribution", "parking_distribution.json"],
-          ["#capacity-bubble", "capacity_bubble.json"]
+          // ["#capacity-bubble", "capacity_bubble.json"],
+          ["#capacity-bubble", "campus_or_faculty_donut.json"]
         ];
         for (const [sel, file] of charts){
           try{ await vegaEmbed(sel, file, { actions:false }); }
