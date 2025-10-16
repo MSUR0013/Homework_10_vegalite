@@ -39,7 +39,7 @@
         "title": "Access Type",
         "scale": {
             "domain": ["Open", "Permit", "Residents", "Other"],
-            "range": ["#3690c0", "#74a9cf", "#0570b0", "#a6bddb"]
+            "range": ["#009E73","#E69F00","#0072B2","#CC79A7"]
         }
         },
         "size": { "field": "cap_num", "type": "quantitative", "title": "Capacity" },

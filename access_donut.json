@@ -22,7 +22,7 @@
         "field": "Access",
         "type": "nominal",
         "title": "Access type",
-        "scale": { "domain": ["Open", "Permit", "Residents", "Other"], "range": ["#74a9cf", "#3690c0", "#0570b0", "#a6bddb"] }
+        "scale": { "domain": ["Open", "Permit", "Residents", "Other"], "range": ["#009E73", "#E69F00", "#0072B2", "#CC79A7"] }
         },
         "order": { "aggregate": "sum", "field": "cap_num", "sort": "descending" },
         "tooltip": [

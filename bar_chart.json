@@ -33,7 +33,7 @@
           "legend": null,
           "scale": {
             "domain": ["Lit", "No light"],
-            "range": ["#3690c0", "#a6bddb"]
+            "range": ["#2E7D32", "#C62828"]
           }
         },
         "tooltip": [

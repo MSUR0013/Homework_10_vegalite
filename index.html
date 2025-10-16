@@ -28,7 +28,7 @@
     <script src="https://unpkg.com/d3@7/dist/d3.min.js"></script>
 
     <style>
-      body { padding: 1rem; font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: #fafafa; }
+      body { padding: 1rem; font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: url('bicycle_header.png'); background-repeat: no-repeat; background-size: 100%; background-position: top 0 center;}
       h1 { text-align: center; font-size: 2rem; font-weight: 700; color: #034e7b; margin-bottom: 0.75rem; }
       .intro { margin: 0 auto 1.5rem auto; max-width: 960px; font-size: 1rem; line-height: 1.6; color: #333; text-align: center; }
       #map-internal { height: 480px; margin-bottom: 24px; background: #f8f9fb; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
@@ -44,7 +44,7 @@
 
     <div class="intro">
       <p>Prepared by <strong>Matthew Sastra Surya (ID: 34393021)</strong>, published on 20/10/2025.</p>
-      <p>Parking data captured from OpenStreetMap on 08/10/2025.</p>
+      <p>Parking data captured from <a href="https://www.openstreetmap.org/about">OpenStreetMap</a> via <a href="https://www.overpass-turbo.eu">Overpass-Turbo</a> on 08/10/2025.</p>
     </div>
 
     <div class="intro">
@@ -191,7 +191,7 @@
       /* ===== Inline Matrix Chart ===== */
       const matrixSpec = {
         "$schema":"https://vega.github.io/schema/vega-lite/v5.json",
-        "description":"3x3 matrix showing total capacity by parking type × access",
+        "description":"3x3 matrix showing total availabality by latitude × longtitude",
         "width":500,"height":420,
         "data":{"url":"bike-data-original.csv","format":{"type":"csv"}},
         "transform":[
