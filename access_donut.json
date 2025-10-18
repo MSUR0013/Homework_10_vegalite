@@ -30,5 +30,5 @@
         { "aggregate": "sum", "field": "cap_num", "type": "quantitative", "title": "Total capacity" }
         ]
     },
-    "title": { "text": "Parking capacity by access type", "fontWeight": "bold" }
+    "title": { "text": "Parking capacity by access type", "fontWeight": "bold"}
     }
